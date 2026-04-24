@@ -37,5 +37,8 @@ ENV NODE_ENV=production \
 WORKDIR /paperclip
 EXPOSE 3100
 
-# `run` does first-boot bootstrap (onboard + doctor) using env vars then starts the server
-CMD ["paperclipai", "run", "--bind", "loopback", "--data-dir", "/paperclip"]
+# `onboard --yes` writes config (idempotent — no-op if already configured) AND starts
+# the server. --bind lan binds to 0.0.0.0 so Railway's HTTP proxy can reach the
+# container; deployment mode (authenticated/public) and PAPERCLIP_PUBLIC_URL come
+# from Railway env vars and override at runtime.
+CMD ["paperclipai", "onboard", "--yes", "--bind", "lan", "--data-dir", "/paperclip"]
