@@ -26,8 +26,8 @@ fi
 # --- 2. Workspace repos (clone on first boot) ----------------------------
 WORKSPACES_DIR="/paperclip/workspaces"
 
-if [ -n "${GITHUB_TOKEN:-}" ] && [ ! -d "$WORKSPACES_DIR" ]; then
-  echo "[entrypoint] bootstrapping git config + cloning Remoteand-org repos to $WORKSPACES_DIR"
+if [ -n "${GITHUB_TOKEN:-}" ]; then
+  echo "[entrypoint] bootstrapping git config + ensuring Remoteand-org repos under $WORKSPACES_DIR"
   mkdir -p "$WORKSPACES_DIR"
 
   # Default agent identity for commits — overridden per-repo below where needed.
@@ -37,9 +37,12 @@ if [ -n "${GITHUB_TOKEN:-}" ] && [ ! -d "$WORKSPACES_DIR" ]; then
   git config --global pull.rebase false
   git config --global advice.detachedHead false
 
+  # Per-repo idempotent clone: checks for .git (not just the dir) so Paperclip-created
+  # empty cwd stubs don't block the clone.
   for repo in remote-and remoteand-website remoteand-fundraising-kit remoteand-context paperclip; do
-    if [ ! -d "$WORKSPACES_DIR/$repo" ]; then
+    if [ ! -d "$WORKSPACES_DIR/$repo/.git" ]; then
       echo "[entrypoint] cloning Remoteand-org/$repo"
+      rm -rf "$WORKSPACES_DIR/$repo" 2>/dev/null || true
       git clone --quiet \
         "https://x-access-token:${GITHUB_TOKEN}@github.com/Remoteand-org/${repo}.git" \
         "$WORKSPACES_DIR/$repo" || echo "[entrypoint] WARN: clone failed for $repo (continuing)"
@@ -54,8 +57,6 @@ if [ -n "${GITHUB_TOKEN:-}" ] && [ ! -d "$WORKSPACES_DIR" ]; then
 
   echo "[entrypoint] workspaces ready:"
   ls -la "$WORKSPACES_DIR" | sed 's/^/[entrypoint]   /'
-elif [ -d "$WORKSPACES_DIR" ]; then
-  echo "[entrypoint] $WORKSPACES_DIR already exists — leaving it alone"
 fi
 
 exec "$@"
