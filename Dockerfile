@@ -34,8 +34,16 @@ ENV NODE_ENV=production \
     PAPERCLIP_DEPLOYMENT_MODE=authenticated \
     PAPERCLIP_DEPLOYMENT_EXPOSURE=public
 
+COPY scripts/paperclip-railway-entrypoint.sh /usr/local/bin/paperclip-railway-entrypoint.sh
+RUN chmod +x /usr/local/bin/paperclip-railway-entrypoint.sh
+
 WORKDIR /paperclip
 EXPOSE 3100
+
+# Entrypoint bootstraps Claude Code OAuth creds from CLAUDE_CREDENTIALS_JSON
+# (so all 4 claude_local agents use the operator's Max sub on first boot)
+# then execs the CMD.
+ENTRYPOINT ["paperclip-railway-entrypoint.sh"]
 
 # `onboard --yes` writes config (idempotent — no-op if already configured) AND starts
 # the server. --bind lan binds to 0.0.0.0 so Railway's HTTP proxy can reach the
